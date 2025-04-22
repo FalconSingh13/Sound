@@ -8,6 +8,9 @@ import gradio as gr
 import numpy as np
 import soundfile as sf
 import torch
+import os
+from datetime import datetime
+import re # Added for filename sanitization
 
 from dia.model import Dia
 
@@ -46,6 +49,8 @@ except Exception as e:
     raise
 
 
+OUTPUT_FOLDER = "Outputs"  # Define output folder path
+
 def run_inference(
     text_input: str,
     audio_prompt_input: Optional[Tuple[int, np.ndarray]],
@@ -65,9 +70,8 @@ def run_inference(
     if not text_input or text_input.isspace():
         raise gr.Error("Text input cannot be empty.")
 
-    temp_txt_file_path = None
     temp_audio_prompt_path = None
-    output_audio = (44100, np.zeros(1, dtype=np.float32))
+    output_audio = (44100, np.zeros(1, dtype=np.float32)) # Default silent audio
 
     try:
         prompt_path_for_generate = None
@@ -192,6 +196,38 @@ def run_inference(
                 f"Audio conversion successful. Final shape: {output_audio[1].shape}, Sample Rate: {output_sr}"
             )
 
+            # --- Save the generated audio ---
+            try:
+                output_sr, final_audio_data = output_audio
+                os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+                now = datetime.now()
+                timestamp_str = now.strftime("%m%d%Y_%H%M%S")
+
+                # --- Generate filename with text prefix ---
+                words = text_input.split()
+                prefix_words = words[:2]
+                # Sanitize each word: keep alphanumeric and underscore, convert to lowercase
+                sanitized_words = [re.sub(r'[^\w]+', '', word).lower() for word in prefix_words]
+                # Filter out empty strings after sanitization
+                sanitized_words = [word for word in sanitized_words if word]
+                text_prefix = "_".join(sanitized_words)
+                if not text_prefix: # Default if text starts with symbols etc.
+                    text_prefix = "audio"
+
+                filename = f"dia_{text_prefix}_{timestamp_str}.wav"
+                # --- End filename generation ---
+
+                filepath = os.path.join(OUTPUT_FOLDER, filename)
+
+                print(f"Attempting to save audio to: {filepath}")
+                sf.write(filepath, final_audio_data, output_sr)
+                print(f"Successfully saved audio to: {filepath}")
+
+            except Exception as save_e:
+                print(f"Error saving audio file: {save_e}")
+                gr.Warning(f"Failed to save audio file: {save_e}")
+            # --- End save audio ---
+
         else:
             print("\nGeneration finished, but no valid tokens were produced.")
             # Return default silence
@@ -207,14 +243,6 @@ def run_inference(
 
     finally:
         # 5. Cleanup Temporary Files defensively
-        if temp_txt_file_path and Path(temp_txt_file_path).exists():
-            try:
-                Path(temp_txt_file_path).unlink()
-                print(f"Deleted temporary text file: {temp_txt_file_path}")
-            except OSError as e:
-                print(
-                    f"Warning: Error deleting temporary text file {temp_txt_file_path}: {e}"
-                )
         if temp_audio_prompt_path and Path(temp_audio_prompt_path).exists():
             try:
                 Path(temp_audio_prompt_path).unlink()

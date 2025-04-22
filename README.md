@@ -8,7 +8,7 @@ AI slop alert. I can't code. Below is what I had Gemini change.
 
 **AI-Generated Audio Saving Feature**  
 
-This PR modifies `app/app.py` to automatically save generated audio files.  
+This modifies `app/app.py` to automatically save generated audio files.  
 
 ### Changes:  
 - Added imports:  

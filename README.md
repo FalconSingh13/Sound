@@ -2,6 +2,38 @@
 <a href="https://github.com/nari-labs/dia">
 <img src="./dia/static/images/banner.png">
 </a>
+AI slop alert. I can't code. Below is what I had Gemini change. 
+
+---
+
+**AI-Generated Audio Saving Feature**  
+
+This modifies `app/app.py` to automatically save generated audio files.  
+
+### Changes:  
+- Added imports:  
+  ```python
+  import os
+  from datetime import datetime
+  ```  
+- Defined output folder:  
+  ```python
+  OUTPUT_FOLDER = "Outputs"
+  ```  
+- Implemented logic in `run_inference` to:  
+  - Create the `Outputs` directory if it doesn’t exist  
+  - Generate a filename in the format: `dia_<word1>_<word2>_MMDDYYYY_HHMMSS.wav` (using the first two sanitized words from input text + timestamp)  
+  - Save the audio file to the `Outputs` directory using `soundfile.write`  
+  - Added error handling for the saving process  
+- Removed unused `temp_txt_file_path` variable  
+
+### Behavior:  
+- Every successful audio generation will now be automatically saved in `app/Outputs/`  
+- Filename includes context from input text for easier identification  
+
+
+------
+
 </p>
 <p align="center">
 <a href="https://tally.so/r/meokbo" target="_blank"><img alt="Static Badge" src="https://img.shields.io/badge/Join-Waitlist-white?style=for-the-badge"></a>
